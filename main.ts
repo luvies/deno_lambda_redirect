@@ -1,9 +1,9 @@
 import { APIGatewayProxyHandler } from "https://deno.land/x/lambda/types.d.ts";
 
-export const handler: APIGatewayProxyHandler = async () => {
-  const location = Deno.env.get("REDIRECT_URI");
+const location = Deno.env.get("REDIRECT_URI");
 
-  if (location) {
+export const handler: APIGatewayProxyHandler = location
+  ? (async () => {
     return {
       statusCode: 302,
       headers: {
@@ -11,10 +11,10 @@ export const handler: APIGatewayProxyHandler = async () => {
       },
       body: "",
     };
-  } else {
+  })
+  : (async () => {
     return {
       statusCode: 500,
       body: "Location not set",
     };
-  }
-};
+  });
