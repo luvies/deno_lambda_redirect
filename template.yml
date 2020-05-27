@@ -13,15 +13,22 @@ Resources:
   RedirectFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./dist
+      CodeUri: ./dist.zip
       MemorySize: 128
       Handler: main.handler
       Runtime: provided
       Layers:
         - !GetAtt Deno.Outputs.LayerArn
       Events:
-        ApiEvent:
-          Type: HttpApi
+        IndexResource:
+          Type: Api
+          Properties:
+            Path: /
+            Method: ANY
       Environment:
         Variables:
-          REDIRECT_URL:
+          REDIRECT_URI: !Ref RedirectUri
+
+Parameters:
+  RedirectUri:
+    Type: String

@@ -1,1 +1,4 @@
 dist/
+dist.zip
+config.local.json
+.DS_Store
