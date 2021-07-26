@@ -34,11 +34,6 @@ const confFiles = [
 ];
 const capabilities = ["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"];
 
-const readConf = async (file: string): Promise<Partial<Config>> => {
-  const text = await Deno.readTextFile(file);
-  return JSON.parse(text);
-};
-
 const fileExists = async (file: string): Promise<boolean> => {
   try {
     const stat = await Deno.stat(file);
@@ -50,6 +45,24 @@ const fileExists = async (file: string): Promise<boolean> => {
 
     throw err;
   }
+};
+
+const tryRemove = async (path: string): Promise<boolean> => {
+  try {
+    await Deno.remove(path, { recursive: true });
+    return true;
+  } catch (err) {
+    if (err instanceof Deno.errors.NotFound) {
+      return false;
+    }
+
+    throw err;
+  }
+};
+
+const readConf = async (file: string): Promise<Partial<Config>> => {
+  const text = await Deno.readTextFile(file);
+  return JSON.parse(text);
 };
 
 const readTransientConf = async (
@@ -113,9 +126,7 @@ const extractConf = async (): Promise<Config> => {
 };
 
 const buildLambda = async (): Promise<void> => {
-  try {
-    await Deno.remove(Paths.dist, { recursive: true });
-  } catch {}
+  await Promise.all([tryRemove(Paths.dist), tryRemove(Paths.distZip)]);
   await Deno.mkdir(Paths.dist, { recursive: true });
   await Deno.copyFile(Paths.main, Paths.mainDist);
   await runCmd({
@@ -125,8 +136,9 @@ const buildLambda = async (): Promise<void> => {
       DENO_DIR: Paths.denoDir,
     },
   });
-  await Deno.rename(Paths.mainGen(Deno.cwd()), Paths.lambdaRootGen);
-  await Deno.remove(Paths.gen, { recursive: true });
+  await runCmd(
+    { cmd: ["cp", "-R", Paths.mainGen(Deno.cwd()), Paths.lambdaRootGen] },
+  );
   await runCmd(
     {
       cmd: ["zip", "-r", join("..", Paths.distZip), "."],
